@@ -1,5 +1,5 @@
 {
-  "name": "track-my-job",
+  "name": "job-tracker",
   "version": "1.0.0",
   "description": "A job tracking and management application.",
   "main": "server.js",
@@ -11,16 +11,19 @@
     "build-client": "cd client && npm run build",
     "server": "nodemon server --ignore client",
     "client": "npm start --prefix client",
-    "start": "concurrently --kill-others-on-fail \" npm run server\" \" npm run client\""
+    "start": "concurrently --kill-others-on-fail \"npm run server\" \"npm run client\""
   },
   "repository": {
-    "type": "git"
+    "type": "git",
+    "url": "git+https://github.com/aniket0929/Track-my-job.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": {},
-  "homepage": "",
+  "bugs": {
+    "url": "https://github.com/aniket0929/Track-my-job/issues"
+  },
+  "homepage": "https://github.com/aniket0929/Track-my-job#readme",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
