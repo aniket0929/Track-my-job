@@ -1,5 +1,5 @@
 {
-  "name": "job-tracker",
+  "name": "track-my-job",
   "version": "1.0.0",
   "description": "A job tracking and management application.",
   "main": "server.js",
@@ -14,16 +14,13 @@
     "start": "concurrently --kill-others-on-fail \" npm run server\" \" npm run client\""
   },
   "repository": {
-    "type": "git",
-    "url": "git+https://github.com/DragonSenses/job-tracker.git"
+    "type": "git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/DragonSenses/job-tracker/issues"
-  },
-  "homepage": "https://github.com/DragonSenses/job-tracker#readme",
+  "bugs": {},
+  "homepage": "",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
