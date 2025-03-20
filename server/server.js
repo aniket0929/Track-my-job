@@ -25,6 +25,7 @@ import authenticateUser from './middleware/authenticate.js';
 import path from 'path';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 // Security Packages
 import helmet from 'helmet';
@@ -33,11 +34,14 @@ import mongoSanitize from 'express-mongo-sanitize';
 // Cookie Parser
 import cookieParser from 'cookie-parser';
 
-// Update CORS configuration
+// Add missing import at the top
+import cors from 'cors';
+
+// Ensure CORS is configured before routes
 app.use(cors({ 
   origin: process.env.NODE_ENV === 'production'
-    ? process.env.PRODUCTION_URL  // Add this to your .env file
-    : 'http://localhost:3000',
+    ? process.env.PRODUCTION_URL
+    : process.env.LOCAL_CLIENT_URL,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -59,55 +63,66 @@ app.use(helmet({
 }));
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const buildPath = path.resolve(__dirname, '../client/build');
 
-// Update static file serving for production
+// Configure morgan for both development and production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.resolve(__dirname, '../client/build')));
-  
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
-  });
+  app.use(morgan('combined')); // More detailed logging for production
 } else {
-  app.get('/', (req, res) => {
-    res.send('API is running...');
-  });
+  app.use(morgan('dev')); // Concise logging for development
 }
 
 app.use(express.json());
 app.use(cookieParser());
-
-// Use security packages for Express app
 app.use(mongoSanitize());
 
-app.get('/api/v1', (req, res) => {
-  res.send('Hello');
-})
-
+// Routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/jobs', authenticateUser, jobsRouter);
 
-// Add error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    status: 'error',
-    message: process.env.NODE_ENV === 'production' 
-      ? 'Something went wrong!' 
-      : err.message
-  });
+// Add this before your main routes
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', environment: process.env.NODE_ENV });
 });
+
+// Serve static assets in production
+if (process.env.NODE_ENV === 'production') {
+  // Ensure the build directory exists
+  if (fs.existsSync(buildPath)) {
+    app.use(express.static(buildPath));
+    
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(buildPath, 'index.html'));
+    });
+  } else {
+    console.error('Build directory not found:', buildPath);
+  }
+}
+
+// These middleware should be last
+app.use(notFoundMiddleware);
+app.use(errorHandlerMiddleware);
 
 const port = process.env.PORT || 4000;
 
 const start = async () => {
-  try{
-    await connectDB(process.env.MONGO_URL);
+  try {
+    // Add connection options for better stability
+    await connectDB(process.env.MONGO_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000
+    });
+    console.log('Connected to MongoDB');
+    
     app.listen(port, () => { 
-      console.log(`Server is listening on port ${port}...`)
+      console.log(`Server is listening on port ${port}...`);
+      console.log('Environment:', process.env.NODE_ENV);
     });
 
-  } catch(error){
-    console.log(error);
+  } catch(error) {
+    console.error('Database connection error:', error);
+    process.exit(1); // Exit if database connection fails
   }
 };
 

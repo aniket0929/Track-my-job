@@ -76,27 +76,20 @@ export default function AppProvider(props) {
   // Axios custom instance
   const authFetch = axios.create({
     baseURL: process.env.NODE_ENV === 'production' 
-      ? '/api/v1'  // In production, use relative path
+      ? '/api/v1'
       : `${process.env.REACT_APP_API_BASE_URL}/api/v1`,
-    withCredentials: true, 
+    withCredentials: true,
+    timeout: 8000,
   });
 
   // Axios response interceptor
-  authFetch.interceptors.response.use( 
-    function (response) {
-      return response;
-    }, 
-    function (error) {
-      console.log(`Error triggered in authFetch,
-      Axios Response Interceptor
-      error: ${error}
-      error.response: ${error.response}`);
-
-      if(error.response.status === 401){
+  authFetch.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      if (error.response?.status === 401) {
         console.log('Authentication Error');
-        logoutUser();
+        await logoutUser();
       }
-
       return Promise.reject(error);
     }
   );
