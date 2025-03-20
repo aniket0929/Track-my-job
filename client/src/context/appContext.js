@@ -67,6 +67,10 @@ const initialState = {
   sortOptions: ['latest', 'oldest', 'a-z', 'z-a'],
 }
 
+import dotenv from 'dotenv';
+dotenv.config();
+
+
 const AppContext = React.createContext();
 
 export default function AppProvider(props) {
@@ -75,7 +79,7 @@ export default function AppProvider(props) {
 
   // Axios custom instance
   const authFetch = axios.create({
-    baseURL: '/api/v1',
+    baseURL: process.env.REACT_APP_BACKEND_URL,
   });
 
   // Axios response interceptor
