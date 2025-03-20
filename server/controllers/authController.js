@@ -77,6 +77,7 @@ const login = async (req, res) => {
   });
 };
 
+
 const updateUser = async (req, res) => {
   const { email, name, lastName, location} = req.body;
 
