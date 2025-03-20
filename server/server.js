@@ -33,25 +33,50 @@ import mongoSanitize from 'express-mongo-sanitize';
 // Cookie Parser
 import cookieParser from 'cookie-parser';
 
-if(process.env.NODE_ENV !== 'production'){
-  app.use(morgan('dev'));
-}
+// Update CORS configuration
+app.use(cors({ 
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.PRODUCTION_URL  // Add this to your .env file
+    : 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
-//for cors error 
-const cors = require('cors');
-app.use(cors({ origin: process.env.REACT_APP_FRONTEND_URL, credentials: true }));
-
+// Add security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      connectSrc: ["'self'", process.env.PRODUCTION_URL || 'http://localhost:3000'],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false,
+}));
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Only for Deployment
-app.use(express.static(path.resolve(__dirname, './client/build')));
+// Update static file serving for production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.resolve(__dirname, '../client/build')));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.send('API is running...');
+  });
+}
 
 app.use(express.json());
 app.use(cookieParser());
 
 // Use security packages for Express app
-app.use(helmet());
 app.use(mongoSanitize());
 
 app.get('/api/v1', (req, res) => {
@@ -61,13 +86,16 @@ app.get('/api/v1', (req, res) => {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/jobs', authenticateUser, jobsRouter);
 
-// Only for Deployment
-app.get('*', function(request, response){
-  response.sendFile(path.resolve(__dirname, './client/build', 'index.html'));
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    status: 'error',
+    message: process.env.NODE_ENV === 'production' 
+      ? 'Something went wrong!' 
+      : err.message
+  });
 });
-
-app.use(notFoundMiddleware);
-app.use(errorHandlerMiddleware);
 
 const port = process.env.PORT || 4000;
 

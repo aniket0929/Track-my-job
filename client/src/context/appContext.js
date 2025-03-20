@@ -67,8 +67,6 @@ const initialState = {
   sortOptions: ['latest', 'oldest', 'a-z', 'z-a'],
 }
 
-
-
 const AppContext = React.createContext();
 
 export default function AppProvider(props) {
@@ -77,7 +75,10 @@ export default function AppProvider(props) {
 
   // Axios custom instance
   const authFetch = axios.create({
-    baseURL: process.env.REACT_APP_BACKEND_URL,
+    baseURL: process.env.NODE_ENV === 'production' 
+      ? '/api/v1'  // In production, use relative path
+      : `${process.env.REACT_APP_API_BASE_URL}/api/v1`,
+    withCredentials: true, 
   });
 
   // Axios response interceptor
@@ -117,9 +118,8 @@ export default function AppProvider(props) {
 
   const registerUser = async (currentUser) => {
     dispatch({ type: REGISTER_USER_BEGIN });
-    try{
-
-      const response = await axios.post('process.env.REACT_APP_BACKEND_URL/auth/register', currentUser);
+    try {
+      const response = await authFetch.post('/auth/register', currentUser);
       const { user, location } = response.data;
 
       dispatch({
@@ -128,10 +128,9 @@ export default function AppProvider(props) {
       });
       
     } catch(error){
-
       dispatch( {
         type: REGISTER_USER_ERROR,
-        payload: { msg: error.response.data.msg },
+        payload: { msg: error.response?.data?.msg || 'Something went wrong' },
       })
     }
     clearAlert();
@@ -139,11 +138,8 @@ export default function AppProvider(props) {
 
   const loginUser = async (currentUser) => {
     dispatch({ type: LOGIN_USER_BEGIN });
-    try{
-      const { data } = await axios.post(
-        'process.env.REACT_APP_BACKEND_URL/auth/login',
-        currentUser
-      );
+    try {
+      const { data } = await authFetch.post('/auth/login', currentUser);
 
       const { user, location } = data;
 
@@ -155,7 +151,7 @@ export default function AppProvider(props) {
     } catch(error){
       dispatch( {
         type: LOGIN_USER_ERROR,
-        payload: { msg: error.response.data.msg },
+        payload: { msg: error.response?.data?.msg || 'Something went wrong' },
       })
     }
     clearAlert();
@@ -184,7 +180,7 @@ export default function AppProvider(props) {
       if(error.response.status !== 401){
         dispatch({
           type: UPDATE_USER_ERROR,
-          payload: { msg: error.response.data.msg },
+          payload: { msg: error.response?.data?.msg || 'Something went wrong' },
         });
       }
     }
@@ -231,14 +227,13 @@ export default function AppProvider(props) {
       dispatch({ type: CREATE_JOB_SUCCESS });
       dispatch({ type: CLEAR_VALUES });
 
-    } catch(error){
-      if(error.response === 401) {
+    } catch(error) {
+      if(error.response?.status === 401) {  // Add optional chaining
         return;
       }
-
       dispatch({
         type: CREATE_JOB_ERROR,
-        payload: { msg: error.response.data.msg },
+        payload: { msg: error.response?.data?.msg || 'Something went wrong' },
       });
     }
 
@@ -314,7 +309,7 @@ export default function AppProvider(props) {
       }
       dispatch({
         type: EDIT_JOB_ERROR,
-        payload: { msg: error.response.data.msg },
+        payload: { msg: error.response?.data?.msg || 'Something went wrong' },
       })
     }
     clearAlert();
@@ -366,26 +361,32 @@ export default function AppProvider(props) {
   
   const getCurrentUser = async () => {
     dispatch({ type: GET_CURRENT_USER_BEGIN });
-    
-    try{
+  
+    try {
       const { data } = await authFetch('/auth/getCurrentUser');
       const { user, location } = data;
-
+  
       dispatch({
         type: GET_CURRENT_USER_SUCCESS,
         payload: { user, location },
       });
-
-    } catch(error) {
-      if(error.response.status === 401) {
+  
+    } catch (error) {
+      console.error("Error fetching user:", error);
+  
+      // ✅ Check if error.response exists before accessing status
+      if (error.response && error.response.status === 401) {
         return;
       }
+  
       logoutUser();
     }
   };
+  
 
   useEffect(() => {
     getCurrentUser();
+    // eslint-disable-next-line
   }, []);
 
   return (
