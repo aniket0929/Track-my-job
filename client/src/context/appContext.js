@@ -67,8 +67,6 @@ const initialState = {
   sortOptions: ['latest', 'oldest', 'a-z', 'z-a'],
 }
 
-import dotenv from 'dotenv';
-dotenv.config();
 
 
 const AppContext = React.createContext();
@@ -121,7 +119,7 @@ export default function AppProvider(props) {
     dispatch({ type: REGISTER_USER_BEGIN });
     try{
 
-      const response = await axios.post('/api/v1/auth/register', currentUser);
+      const response = await axios.post('process.env.REACT_APP_BACKEND_URL/auth/register', currentUser);
       const { user, location } = response.data;
 
       dispatch({
@@ -143,7 +141,7 @@ export default function AppProvider(props) {
     dispatch({ type: LOGIN_USER_BEGIN });
     try{
       const { data } = await axios.post(
-        '/api/v1/auth/login',
+        'process.env.REACT_APP_BACKEND_URL/auth/login',
         currentUser
       );
 

@@ -37,6 +37,11 @@ if(process.env.NODE_ENV !== 'production'){
   app.use(morgan('dev'));
 }
 
+//for cors error 
+const cors = require('cors');
+app.use(cors({ origin: process.env.REACT_APP_FRONTEND_URL, credentials: true }));
+
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Only for Deployment
